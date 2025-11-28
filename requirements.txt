@@ -1,0 +1,9 @@
+# requirements.txt
+
+torch
+torchvision
+tqdm
+Pillow
+requests
+PyYAML
+matplotlib

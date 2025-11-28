@@ -1,0 +1,49 @@
+training:
+  device: "cuda"
+  batch_size: 2 #! 必须要小
+  num_workers: 4
+  learning_rate: 0.000001
+  epochs: 1
+
+  freeze_vit: true
+  freeze_llm: false
+
+  max_new_tokens: 32
+  temperature: 1.0
+
+  lambda_rl: 1.0
+  lambda_ce: 0.1
+
+model: #! 注意与 mllm_config.yaml 保持一致
+  vision_encoder:
+    image_size: 384
+    patch_size: 16
+    in_channels: 3
+    vision_dim: 768
+    n_layers: 8
+    n_heads: 8
+    d_ff: 2048
+    dropout: 0.2
+    num_classes: null
+
+  language_model:
+    language_dim: 512
+    n_layers: 6
+    n_heads: 8
+    d_ff: 1536
+    max_len: 1024
+    dropout: 0.2
+
+  connector:
+    vision_dim: 768
+    language_dim: 512
+    hidden_dim: 1024
+    type: "mlp"
+
+paths:
+  tokenizer_save_path: "./checkpoints/flickr8k_tokenizer.json"
+  best_model_save_path: "./checkpoints/mllm_flickr8k_v2_best.pth" #! sft的路径
+  rl_save_path: "./checkpoints/mllm_rl.pt"
+
+data:
+  data_root: "./data/flickr8k"

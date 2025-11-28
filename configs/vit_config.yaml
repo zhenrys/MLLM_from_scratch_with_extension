@@ -1,0 +1,54 @@
+# configs/vit_config.yaml
+#* 我自己修改的
+
+# --- Data Parameters ---
+data_params:
+  dataset: 'CIFAR10'
+  root_dir: './data/cifar10'
+  img_size: 224 #! 重要
+  in_channels: 3
+  num_classes: 10
+  # CIFAR-10 class names in order
+  class_names: 
+    - 'plane'
+    - 'car'
+    - 'bird'
+    - 'cat'
+    - 'deer'
+    - 'dog'
+    - 'frog'
+    - 'horse'
+    - 'ship'
+    - 'truck'
+  # Normalization constants for CIFAR-10
+  mean: [0.4914, 0.4822, 0.4465]
+  std: [0.2470, 0.2435, 0.2616]
+
+# --- Model Parameters ---
+model_params:
+  patch_size: 16  #! 重要
+  d_model: 512
+  num_layers: 6
+  n_heads: 8
+  d_ff: 2048
+  dropout: 0.1
+
+# --- Training Parameters ---
+training_params:
+  device: 'cuda' # 'cuda' or 'cpu'
+  num_epochs: 100  # 原本是 50
+  batch_size: 256  # 原本 128
+  learning_rate: 0.0003  #! 重要。原本 0.001，学习率必须要小，可以 0.0003，大了总是 acc 10%
+  weight_decay: 0.05 #! 根据豪哥的经验，大点好，0.05
+  eval_interval: 5
+  # Path where the trained model is saved and from where it is loaded
+  model_save_path: './checkpoints/vit_cifar10.pth'
+  num_workers: 4  # 设置为 0 可以在 mac 本地跑
+  scheduler_T_max: 100 #! 最好和 epoch 一致
+
+# --- Prediction Parameters ---
+prediction_params:
+  # Can be a local file path or a web URL
+  # Example URL: "https://www.motortrend.com/uploads/2022/11/2024-Tesla-Cybertruck-exterior-view.jpg"
+  # Example local path: "./assets/my_car_image.jpg"
+  image_source: "/home/u1120230266/VLM-R1/Zhanghengrui/mllm_from_scratch/MLLM-from-scratch/cat.jpg"

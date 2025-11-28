@@ -1,0 +1,42 @@
+# configs/llm_config.yaml
+# 自己修改
+# Configuration for training the GPT-style Language Model on Tiny Shakespeare
+
+# --- Data Parameters ---
+data_params:
+  data_dir: "data"
+  dataset_url: "https://raw.githubusercontent.com/karpathy/char-rnn/master/data/tinyshakespeare/input.txt"
+  dataset_path: "./data/tinyshakespeare/input.txt"
+  # block_size (or context_length) is the maximum sequence length the model can see at once.
+  block_size: 256
+
+# --- Model Parameters ---
+# These parameters define the architecture of our GPT-style model.
+model_params:
+  # vocab_size will be determined by the tokenizer after reading the data.
+  # We leave it here as a placeholder, but it will be updated in the training script.
+  vocab_size: 65 
+  d_model: 384        # Embedding dimension
+  num_layers: 6       # Number of Transformer Decoder layers
+  n_heads: 6          # Number of attention heads (d_model must be divisible by n_heads)
+  d_ff: 1536          # Hidden dimension of the FeedForward network (often 4 * d_model)
+  dropout: 0.1
+
+# --- Training Parameters ---
+training_params:
+  batch_size: 64
+  learning_rate: 0.0003
+  weight_decay: 0.01
+  num_epochs: 30
+  # Device can be 'cuda', 'cpu', or 'mps' for Apple Silicon
+  device: "cuda" 
+  num_workers: 4
+  model_save_path: "checkpoints/llm_tinyshakespeare.pth"
+  # How often to print validation loss (in epochs)
+  eval_interval: 1
+
+# --- Generation Parameters ---
+generation_params:
+  # The starting text for generation. "\n" is a good neutral start.
+  start_context: "You are all resolved"
+  max_new_tokens: 500

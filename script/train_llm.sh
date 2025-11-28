@@ -1,0 +1,3 @@
+python main.py \
+    --task train_llm \
+    --config /home/u1120230266/VLM-R1/Zhanghengrui/mllm_from_scratch/MLLM_from_scratch/configs/llm_config.yaml

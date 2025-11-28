@@ -1,0 +1,63 @@
+# --- Paths ---
+paths:
+  output_dir: "checkpoints"
+  model_save_name: "mllm_flickr8k_v2.pth"
+  captions_corpus_path: "./data/flickr8k/captions.txt"
+  tokenizer_save_path: "checkpoints/flickr8k_tokenizer.json"
+  best_model_save_path: 'checkpoints/mllm_flickr8k_v2_best.pth'
+
+# --- Data ---
+data:
+  dataset_name: "flickr8k"
+  data_root: "./data/flickr8k"
+
+model:
+  vision_encoder:
+    vision_dim: 768
+    n_layers: 8            # ↑从 6 → 8，视觉表征更强，更稳定
+    n_heads: 8
+    dropout: 0.2
+    d_ff: 2048             # ↑从 1536 → 2048，提升表达能力
+    image_size: 384        # ↓从 448 → 384，更快 & GPU 更省
+    patch_size: 16
+    in_channels: 3
+    num_classes: null
+
+  language_model:
+    n_layers: 6
+    language_dim: 512
+    n_heads: 8
+    d_ff: 1536             # ↑从 1024 → 1536，语言推理更强
+    max_len: 1024          # ↓从 2048 → 1024，更快更节省显存
+    dropout: 0.2
+
+  connector:
+    vision_dim: 768
+    language_dim: 512
+    type: "mlp"
+    hidden_dim: 1024       # ↑从 768 → 1024，提高视觉→语言映射质量
+
+# --- Training Strategy ---
+training:
+  freeze_vit: False
+  freeze_llm: False
+  
+  # --- Training Hyperparameters ---
+  device: "cuda"
+  epochs: 15               # ↓从 30 → 15（从头训练小模型使用过长训练会过拟合）
+  batch_size: 8            # ↑从 4 → 8（显著提升 batch-level 稳定性）
+  learning_rate: 0.0003      # ↑稍大，适合从头训练 double-encoder 类 MLLM #* 写e会报错
+  scheduler: cosine        # ⭐新增，动态学习率训练
+  warmup_steps: 500        # ⭐新增，极大稳定训练
+  weight_decay: 0.05      # ⭐新增，提高泛化
+  grad_clip: 1.0           # ⭐新增，避免梯度爆炸
+  num_workers: 4
+  eval_interval: 1
+
+# --- Inference ---
+generation:
+  inference_image_path: "/home/u1120230266/VLM-R1/Zhanghengrui/mllm_from_scratch/MLLM_from_scratch/data/flickr8k/Images/3637013_c675de7705.jpg"
+  prompt: ""
+  max_new_tokens: 100       # ↓从 200 → 50，更稳定，更符合 caption 任务
+  temperature: 0.7
+  top_k: 200                # 加 top_k 提升生成质量
