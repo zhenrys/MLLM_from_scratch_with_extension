@@ -1,8 +1,6 @@
 
 
-# 从零开始构建多模态大模型并进行自由扩展
-
-**MLLM from Scratch with Extension**
+# 从零开始构建多模态大模型并进行自由扩展(MLLM from Scratch with Extension)
 
 本项目系统性展示了一个多模态大模型（Multimodal Large Language Model, MLLM）从零实现的完整流程，包括 Transformer 基础组件、Vision Transformer、GPT-style 语言模型、多模态融合机制，以及进一步的强化学习扩展（SCST）。整个实现基于纯 PyTorch，不依赖 transformers、timm 等高封装库，旨在让学习者深入理解多模态模型背后的核心原理与工程细节。
 
