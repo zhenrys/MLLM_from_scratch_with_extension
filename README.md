@@ -128,10 +128,12 @@ pip install -r requirements.txt
 ### 运行训练脚本（各模块）
 
 ```
-python scripts/train/vit_train.py
-python scripts/train/gpt_train.py
-python scripts/train/mllm_train.py
+bash script/train_vit.sh
+bash script/train_llm.sh
+bash script/train_mllm.sh
 ```
+
+测试脚本只需将 train 换成 test。
 
 ### 调整模型参数
 
@@ -143,7 +145,7 @@ configs/*.yaml
 
 ### 数据集下载
 
-在 `datasets/` 中已补全下载逻辑，数据将自动保存到 `data/` 目录。
+在 `datasets/` 中已补全下载逻辑。部分数据集较大，需手动下载解压并保存到 `data/` 目录。
 
 ---
 
@@ -157,9 +159,9 @@ SCST 使用：
 * **贪心输出**：R_greedy（作为 baseline）
   实现低方差 REINFORCE：
 
-[
+$$
 \nabla_\theta J \approx (R_\text{sample} - R_\text{greedy}) \nabla_\theta \log \pi_\theta(a_\text{sample})
-]
+$$
 
 ### RL 扩展目录：
 
@@ -183,10 +185,15 @@ SCST 使用：
 * RL 训练脚本与评估脚本
 * 可与 SFT 权重无缝衔接
 
+### 运行RL脚本
+
+```
+bash script/train_rl_mllm.sh
+bash script/test_rl_mllm.sh
+```
+
 
 # 📝 补充说明
-* 数据集较大未上传，下载数据集的操作：在 datasets/中补全代码，下载数据集到 data/ 中
-* 训练与测试脚本在 script/ 目录下：train 为训练，test 为测试
 * vit 和 gpt 的 loss 曲线图都在 mllm_from_scratch/MLLM_from_scratch下；mllm 的在mllm_from_scratch/MLLM_from_scratch/checkpoint 下
 * 组装 transformer 需要通过的单元测试在 test_transformer.ipynb 中完成
 
