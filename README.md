@@ -1,23 +1,16 @@
-# 从零开始构建多模态大模型并进行自由扩展（MLLM from Scratch with Extension）
 
-项目主体分为两个部分，第一部分为基于 pytorch 直接组装多模态大模型（不依赖 transformer 库），第二部分为基于构建的 MLLM 的自由扩展，如强化学习微调。本项目适合 MLLM 初学者初步了解基本架构与接触一些工程细节，可重点关注其中 TODO 注释部分。
 
-# 第一部分：从零开始构建多模态大模型 (MLLM from Scratch)
-*注：此处主要参考复旦大学2025秋季学期人工智能前沿探索实践 Project-2与 llm-from-scratch 项目*
+# 从零开始构建多模态大模型并进行自由扩展
 
-## 项目简介
+**MLLM from Scratch with Extension**
 
-本部分旨在提供一个从零开始、纯手工实现多模态大模型（Multimodal Large Language Model, MLLM）的教程和代码库。我们不依赖于 `timm`、`transformers` 等高度封装的库，而是逐步构建起整个模型的核心组件，包括 **Transformer**、**Vision Transformer (ViT)**、**GPT-style 语言模型**，并最终将它们融合成一个能够理解图像并生成描述的 MLLM。
+本项目系统性展示了一个多模态大模型（Multimodal Large Language Model, MLLM）从零实现的完整流程，包括 Transformer 基础组件、Vision Transformer、GPT-style 语言模型、多模态融合机制，以及进一步的强化学习扩展（SCST）。整个实现基于纯 PyTorch，不依赖 transformers、timm 等高封装库，旨在让学习者深入理解多模态模型背后的核心原理与工程细节。
 
-通过亲手实现每一个模块，您将深入理解：
-- Transformer 架构的细节，从注意力机制到编码器/解码器模块。
-- Vision Transformer (ViT) 如何将计算机视觉问题转化为序列处理任务。
-- 自回归语言模型（LLM）如何基于 Causal Attention 生成连贯的文本。
-- 多模态大模型如何通过一个“连接器”（Connector）来对齐视觉和语言这两个不同的模态空间。
+*注：目前的版本是补完的版本，如果需要带空缺的版本清留意 #TODO 注释并稍作手动删除即可。*
 
-最终，我们将构建一个可以“看图说话”的迷你版多模态模型。
+---
 
-## 项目架构
+# 📁 项目结构（Project Structure）
 
 ```
 MLLM-from-scratch/
@@ -36,153 +29,171 @@ MLLM-from-scratch/
 ├── transformer_from_scratch/
 │   ├── __init__.py
 │   ├── attention.py        # ScaledDotProductAttention, MultiHeadAttention
-│   ├── layers.py           # PositionwiseFeedForward, PositionalEncoding, LayerNorm
+│   ├── layers.py           # FFN、PositionalEncoding、LayerNorm 等
 │   ├── blocks.py           # EncoderBlock, DecoderBlock
-│   └── model.py            # TransformerEncoder, TransformerDecoder, Transformer
+│   └── model.py            # TransformerEncoder, Decoder, Full Transformer
 │
 ├── vision_transformer/
 │   ├── __init__.py
-│   ├── vit.py              # ViT模型实现
-│   ├── train_vit.py        # 训练ViT的脚本
-│   └── predict_vit.py      # 使用训练好的ViT进行推理的脚本
+│   ├── vit.py              # ViT 实现
+│   ├── train_vit.py        # ViT 训练脚本
+│   └── predict_vit.py      # ViT 推理脚本
 │
 ├── language_model/
 │   ├── __init__.py
-│   ├── tokenizer.py        # 简单的字符级分词器
-│   ├── llm.py              # GPT-style LLM模型实现
-│   ├── train_llm.py        # 训练LLM的脚本
-│   └── generate_text.py    # 使用训练好的LLM生成文本的脚本
+│   ├── tokenizer.py        # 字符级 tokenizer
+│   ├── llm.py              # GPT-style 自回归语言模型
+│   ├── train_llm.py        # 训练脚本
+│   └── generate_text.py    # 文本生成脚本
 │
 ├── multimodal_model/
 │   ├── __init__.py
-│   ├── connector.py        # 视觉特征到语言空间的连接器
-│   ├── mllm.py             # 多模态大模型 (组合ViT, Connector, LLM)
-│   ├── train_mllm.py       # 训练/微调MLLM的脚本
-│   └── inference_mllm.py   # 多模态推理脚本 (看图说话)
+│   ├── connector.py        # 视觉特征 → 语言 embedding 的映射模块
+│   ├── mllm.py             # MLLM 组装（ViT + Connector + LLM）
+│   ├── train_mllm.py       # 多模态训练
+│   └── inference_mllm.py   # “看图说话”推理脚本
 │
 ├── tests/
-│   ├── test_attention.py   # 单元测试：验证Attention
-│   ├── test_blocks.py      # 单元测试：验证Encoder/Decoder Block
-│   └── test_transformer.py # 单元测试：验证Transformer
+│   ├── test_attention.py
+│   ├── test_blocks.py
+│   └── test_transformer.py
 │
 ├── utils/
 │   ├── __init__.py
-│   ├── training_utils.py   # 训练循环、保存/加载模型、日志记录等
-│   └── config_parser.py    # 解析yaml配置文件的函数
+│   ├── training_utils.py   # 训练循环、日志、checkpoint
+│   └── config_parser.py    # Yaml 配置解析
 │
-├── main.py                 # 项目主入口，通过命令行参数选择执行任务
-├── requirements.txt        # 项目依赖
-└── README.md               # 项目说明文档
+├── main.py                 # 脚本入口
+├── requirements.txt
+└── README.md
 ```
-
-## 各模块详细说明
-
-### 1. `transformer_from_scratch/` (基础核心)
-这是整个项目的基石。所有与标准 Transformer 架构相关的组件都在这里实现。
-- **`attention.py`**: 实现缩放点积注意力和多头注意力。
-- **`layers.py`**: 实现前馈网络、位置编码（正弦/余弦和可学习版本）、层归一化。
-- **`blocks.py`**: 将 `MultiHeadAttention` 和 `PositionwiseFeedForward` 等组装成一个完整的 `EncoderBlock` 和 `DecoderBlock`。
-- **`model.py`**: 将多个 Block 堆叠起来，形成 `TransformerEncoder` 和 `TransformerDecoder`。
-
-### 2. `vision_transformer/` (单模态应用一: 视觉)
-基于第一阶段的成果，构建 Vision Transformer (ViT)。
-- **`vit.py`**: 导入 `TransformerEncoder`，并额外实现 `PatchEmbedding` 层，负责将 `[B, C, H, W]` 的图像转换为 `[B, N, D]` 的 patch embedding 序列。最终将所有组件组合成完整的 ViT 模型。
-- **`train_vit.py`**: 负责加载 CIFAR-10 数据、实例化 ViT 模型、执行训练和评估循环。
-- **`predict_vit.py`**: 用于对 CIFAR-10 测试集图像进行分类推理。
-
-### 3. `language_model/` (单模态应用二: 语言)
-同样基于第一阶段的成果，构建一个小型自回归语言模型（GPT-style）。
-- **`tokenizer.py`**: 实现一个简单的字符级分词器，包含 `encode` 和 `decode` 方法。
-- **`llm.py`**: 导入 `DecoderBlock`，并实现一个包含词嵌入、位置编码、一堆带有因果掩码（Causal Mask）的 Decoder Block 以及一个最终预测 logits 的完整语言模型。
-- **`train_llm.py`**: 负责加载 Tiny Shakespeare 文本数据、实例化 LLM 模型并进行训练。
-- **`generate_text.py`**: LLM 推理脚本，用于生成文本。
-
-### 4. `multimodal_model/` (多模态融合)
-这是项目的最终目标，将前面构建的视觉和语言模块进行融合。
-- **`connector.py`**: 多模态设计的核心。它将 ViT 输出的视觉特征映射到 LLM 能够理解的语言 embedding 空间。实现上可以为简单的线性层或 MLP。
-- **`mllm.py`**: 实例化一个 ViT、一个 LLM 和一个 Connector。其 `forward` 方法负责将图像编码后的特征与文本提示的 embeddings 拼接起来，共同送入语言模型。
-- **`train_mllm.py`**: 加载 Flickr8k 图文对数据进行训练，设计合理的训练策略
-- **`inference_mllm.py`**: MLLM 推理代码，实现“看图说话”。
-
-
-## 关于第一部分的补充说明
-* 已经将 transformer，vision transformer，language model，multimodal model 补全
-* 训练与测试脚本在 script/ 目录下：train 为训练，test 为测试
-* vit 和 gpt 的 loss 图都在 mllm_from_scratch/MLLM_from_scratch下；mllm 的在mllm_from_scratch/MLLM_from_scratch/checkpoint 下
-* 组装 transformer 需要通过的单元测试在 test_transformer.ipynb 中完成
-* 调整训练配置在 configs/ 中找对应的文件进行调整
-* 原始 readme 没有写下载数据集的操作，实际需要进行：在 datasets/中补全代码，下载数据集到 data/ 中
-* 部分 loss 图需要手动添加代码绘制
-* 有一部分初始化 vit，gpt 等的部分没有写在 todo 里，运行会报错存在省略号，需要手动初始化传入参数  
 
 ---
-# 第二部分
 
-## 强化学习扩展
+# 🧩 第一部分：从零实现多模态大模型
+
+这一部分重点展示如何从底层组件构建标准 Transformer，再逐步构建 Vision Transformer 与 GPT-style 语言模型，最终完成一个可以进行图像描述任务的基础 MLLM。
+
+### 包含内容：
+
+### 1. Transformer 从零实现
+
+* Scaled Dot-Product Attention
+* Multi-Head Attention
+* FeedForward Network
+* Positional Encoding（正弦版与可学习版）
+* Encoder / Decoder Block
+* 全部组件的单元测试（test_transformer.ipynb）
+
+---
+
+### 2. Vision Transformer
+
+* 手写 PatchEmbedding
+* 复用 TransformerEncoder
+* 在 CIFAR-10 上训练
+* 可视化 loss 及分类推理
+* 可通过 configs/ 调整维度、head 数、深度等参数
+
+---
+
+### 3. GPT-style LLM
+
+* 字符级 tokenizer
+* Causal Mask + Decoder-only Transformer
+* 在 Tiny Shakespeare 上训练
+* 支持 generate() 方法生成文本
+
+---
+
+### 4. 多模态模型（MLLM）
+
+* ViT encoder 提取视觉特征
+* Connector 映射到语言 embedding space
+* 拼接视觉 token + 文本 token
+* LLM decoder 自回归生成输出
+* 使用 Flickr8k 进行图文对训练
+* 支持 inference_mllm.py 做“看图说话”
+
+---
+
+# 🔧 使用说明（Usage）
+
+### 安装依赖
+
 ```
-MLLM-from-scratch/
+pip install -r requirements.txt
+```
+
+### 运行训练脚本（各模块）
+
+```
+python scripts/train/vit_train.py
+python scripts/train/gpt_train.py
+python scripts/train/mllm_train.py
+```
+
+### 调整模型参数
+
+编辑：
+
+```
+configs/*.yaml
+```
+
+### 数据集下载
+
+在 `datasets/` 中已补全下载逻辑，数据将自动保存到 `data/` 目录。
+
+---
+
+# 🧠 第二部分：强化学习扩展（RL Fine-tuning）
+
+项目进一步提供 RL 微调能力，以 SCST（Self-Critical Sequence Training）为核心方法。
+
+SCST 使用：
+
+* **采样输出**：R_sample
+* **贪心输出**：R_greedy（作为 baseline）
+  实现低方差 REINFORCE：
+
+[
+\nabla_\theta J \approx (R_\text{sample} - R_\text{greedy}) \nabla_\theta \log \pi_\theta(a_\text{sample})
+]
+
+### RL 扩展目录：
+
+```
 ├── configs/
-│   ├── rl_mllm_config.yaml     # 新增：RL 微调的超参。需注意对齐 sft 的 mllm 参数
+│   ├── rl_mllm_config.yaml
 │
 ├── multimodal_model/
-│   ├── mllm.py                 # 补充：支持采样 & 返回 log prob。新增部分已用注释标出
-│   ├── train_mllm.py
-│   ├── inference_mllm.py
-│   ├── rl_finetune_mllm.py     # 新增：RL 微调脚本（核心）
-│   └── inference_rl_mllm.py     # 新增：RL 推理脚本
+│   ├── rl_finetune_mllm.py
+│   ├── inference_rl_mllm.py
 │
 ├── scripts/
-│   ├── test_rl_mllm.sh         # 新增：测试 RL 微调后的结果
-│   └── rl_mllm.sh              # 新增：进行RL 微调
-
+│   ├── rl_mllm.sh
+│   └── test_rl_mllm.sh
 ```
-### 采用方法
-SCST（Self-Critical Sequence Training，自批判序列训练）是一种**基于 REINFORCE 的策略梯度方法**，专门用来训练生成模型（如图像描述、机器翻译），让模型直接优化 BLEU、CIDEr 这类**序列级指标**，并用“自己贪心解码出的结果”当作 baseline 来减小方差。
+
+### 支持功能：
+
+* 返回 log prob 的增强版 MLLM
+* 基于 CIDEr / BLEU 的 reward 计算
+* RL 训练脚本与评估脚本
+* 可与 SFT 权重无缝衔接
+
+
+# 📝 补充说明
+* 数据集较大未上传，下载数据集的操作：在 datasets/中补全代码，下载数据集到 data/ 中
+* 训练与测试脚本在 script/ 目录下：train 为训练，test 为测试
+* vit 和 gpt 的 loss 曲线图都在 mllm_from_scratch/MLLM_from_scratch下；mllm 的在mllm_from_scratch/MLLM_from_scratch/checkpoint 下
+* 组装 transformer 需要通过的单元测试在 test_transformer.ipynb 中完成
 
 ---
 
-### REINFORCE + baseline 的一般形式
+# 📚 参考资料
 
-REINFORCE 的梯度估计形如：
+* 复旦大学 2025 秋《人工智能前沿探索实践》Project-2
+* Sebastian Raschka，《LLMs from Scratch》[https://github.com/rasbt/LLMs-from-scratch](https://github.com/rasbt/LLMs-from-scratch)
 
-$$
-\nabla_\theta J(\theta) \approx (R - b) \nabla_\theta \log \pi_\theta(a_{1:T}|x)
-$$
-
-* R：当前采样序列的奖励
-* b：baseline（一个和动作无关的标量），用来**减小方差**
-* 如果 R > b，则增加该序列的概率；反之则减小
-
-关键在于：**b 怎么选？**
-
----
-
-### “Self-Critical”：用自己贪心解码做 baseline
-
-SCST 的核心 trick：
-
-1. 对同一个输入 x：
-
-   * 用当前模型 **采样（可能选次高的，有随机性）** 一句：$\hat{a}^{\text{sample}}$，得到奖励 $R^{\text{sample}}$
-   * 用当前模型 **贪心解码（greedy,只选最高的，无随机）** 一句：$\hat{a}^{\text{greedy}}$，得到奖励 $R^{\text{greedy}}$
-2. 把 **贪心解码的奖励** 当成 baseline：
-   $$
-   b = R^{\text{greedy}}
-   $$
-3. 梯度变成：
-   $$
-   \nabla_\theta J(\theta) \approx (R^{\text{sample}} - R^{\text{greedy}}),\nabla_\theta \log \pi_\theta(\hat{a}^{\text{sample}}|x)
-   $$
-
-直观理解：
-
-* 如果采样句子比分数“贪心句子”好（R_sample > R_greedy），
-  → 提高这句的概率（正更新）。
-* 如果更差
-  → 降低这句的概率（负更新）。
-
-
-
-# 参考
-* 「复旦大学2025秋季学期人工智能前沿探索实践 Project-2」
-* 「llm from scratch 项目」https://github.com/rasbt/LLMs-from-scratch
