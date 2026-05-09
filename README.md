@@ -1,10 +1,11 @@
+# 从零开始构建多模态大模型并进行自由扩展
 
+本项目系统性展示了一个多模态大模型（Multimodal Large Language Model, MLLM）从零实现的完整流程，包括 Transformer 基础组件、Vision Transformer、GPT-style 语言模型、多模态融合机制，以及进一步的强化学习扩展（SCST）。
 
-# 从零开始构建多模态大模型并进行自由扩展(MLLM from Scratch with Extension)
+项目主要基于 PyTorch 手写核心模块，尽量不依赖 `transformers`、`timm` 等高封装库，适合用来理解多模态模型背后的数据链条、训练逻辑和工程组织方式。
 
-本项目系统性展示了一个多模态大模型（Multimodal Large Language Model, MLLM）从零实现的完整流程，包括 Transformer 基础组件、Vision Transformer、GPT-style 语言模型、多模态融合机制，以及进一步的强化学习扩展（SCST）。整个实现基于纯 PyTorch，不依赖 transformers、timm 等高封装库，旨在让学习者深入理解多模态模型背后的核心原理与工程细节。
+当前版本是补完版本；如果需要教学用的填空版本，可以搜索代码中的 `TODO` 注释并手动处理。
 
-*注：目前的版本是补完的版本，如果需要带空缺的版本清留意 #TODO 注释并稍作手动删除即可。*
 
 ---
 
@@ -68,100 +69,201 @@ MLLM-from-scratch/
 
 ---
 
-# 🧩 第一部分：从零实现多模态大模型
+## 快速入口
 
-这一部分重点展示如何从底层组件构建标准 Transformer，再逐步构建 Vision Transformer 与 GPT-style 语言模型，最终完成一个可以进行图像描述任务的基础 MLLM。
+建议在项目根目录执行：
 
-### 包含内容：
-
-### 1. Transformer 从零实现
-
-* Scaled Dot-Product Attention
-* Multi-Head Attention
-* FeedForward Network
-* Positional Encoding（正弦版与可学习版）
-* Encoder / Decoder Block
-* 全部组件的单元测试（test_transformer.ipynb）
-
----
-
-### 2. Vision Transformer
-
-* 手写 PatchEmbedding
-* 复用 TransformerEncoder
-* 在 CIFAR-10 上训练
-* 可视化 loss 及分类推理
-* 可通过 configs/ 调整维度、head 数、深度等参数
-
----
-
-### 3. GPT-style LLM
-
-* 字符级 tokenizer
-* Causal Mask + Decoder-only Transformer
-* 在 Tiny Shakespeare 上训练
-* 支持 generate() 方法生成文本
-
----
-
-### 4. 多模态模型（MLLM）
-
-* ViT encoder 提取视觉特征
-* Connector 映射到语言 embedding space
-* 拼接视觉 token + 文本 token
-* LLM decoder 自回归生成输出
-* 使用 Flickr8k 进行图文对训练
-* 支持 inference_mllm.py 做“看图说话”
-
----
-
-# 🔧 使用说明（Usage）
-
-### 安装依赖
-
+```bash
+cd ..../MLLM_from_scratch
 ```
+
+安装依赖：
+
+```bash
 pip install -r requirements.txt
 ```
 
-### 运行训练脚本（各模块）
+统一入口是 `main.py`，通过 `--task` 选择任务，通过 `--config` 指定配置文件：
 
-```
-bash script/train_vit.sh
-bash script/train_llm.sh
-bash script/train_mllm.sh
-```
+```bash
+python main.py --task train_vit --config configs/vit_config.yaml
+python main.py --task predict_vit --config configs/vit_config.yaml
 
-测试脚本只需将 train 换成 test。
+python main.py --task train_llm --config configs/llm_config.yaml
+python main.py --task generate_text --config configs/llm_config.yaml
 
-### 调整模型参数
+python main.py --task train_mllm --config configs/mllm_config.yaml
+python main.py --task inference_mllm --config configs/mllm_config.yaml
 
-编辑：
-
-```
-configs/*.yaml
+python main.py --task train_rl_mllm --config configs/rl_mllm_config.yaml
 ```
 
-### 数据集下载
+`script/*.sh` 中也提供了调用脚本，但目前部分路径是服务器绝对路径。本地运行时更推荐直接使用上面的相对路径命令，或先修改脚本中的 `--config` 路径。
 
-在 `datasets/` 中已补全下载逻辑。部分数据集较大，需手动下载解压并保存到 `data/` 目录。
 
----
 
-# 🧠 第二部分：强化学习扩展（RL Fine-tuning）
+## 数据集与训练链条
 
-项目进一步提供 RL 微调能力，以 SCST（Self-Critical Sequence Training）为核心方法。
+### 1. ViT 图像分类链条
 
-SCST 使用：
+目标：在 CIFAR-10 上训练一个从零实现的 Vision Transformer 分类器。
 
-* **采样输出**：R_sample
-* **贪心输出**：R_greedy（作为 baseline）
-  实现低方差 REINFORCE：
+相关文件：
 
-$$
-\nabla_\theta J \approx (R_\text{sample} - R_\text{greedy}) \nabla_\theta \log \pi_\theta(a_\text{sample})
-$$
+- 配置：`configs/vit_config.yaml`
+- 数据集：`datasets/cifar10.py`
+- 模型：`vision_transformer/vit.py`
+- 训练：`vision_transformer/train_vit.py`
+- 推理：`vision_transformer/predict_vit.py`
 
-### RL 扩展目录：
+数据流：
+
+```text
+CIFAR-10 image
+-> torchvision transforms
+-> ViT
+-> class logits
+-> CrossEntropyLoss
+```
+
+训练命令：
+
+```bash
+python main.py --task train_vit --config configs/vit_config.yaml
+```
+
+推理命令：
+
+```bash
+python main.py --task predict_vit --config configs/vit_config.yaml
+```
+
+主要输出：
+
+- `checkpoints/vit_cifar10.pth`
+- `vit_loss_curve.png`
+- `vit_accuracy_curve.png`
+
+### 2. GPT 字符级语言模型链条
+
+目标：在 Tiny Shakespeare 上训练一个 GPT-style decoder-only 语言模型。
+
+相关文件：
+
+- 配置：`configs/llm_config.yaml`
+- 数据集：`datasets/tinyshakespeare.py`
+- Tokenizer：`language_model/tokenizer.py`
+- 模型：`language_model/llm.py`
+- 训练：`language_model/train_llm.py`
+- 文本生成：`language_model/generate_text.py`
+
+数据流：
+
+```text
+Tiny Shakespeare text
+-> CharacterTokenizer
+-> sliding window blocks
+-> x = tokens[:-1], y = tokens[1:]
+-> GPTModel
+-> next-character CrossEntropyLoss
+```
+
+训练命令：
+
+```bash
+python main.py --task train_llm --config configs/llm_config.yaml
+```
+
+生成命令：
+
+```bash
+python main.py --task generate_text --config configs/llm_config.yaml
+```
+
+主要输出：
+
+- `checkpoints/llm_tinyshakespeare.pth`
+- `data/tinyshakespeare/vocab.json`
+- `gpt_training_curve.png`
+
+注意：`language_model/generate_text.py` 中生成循环仍有 `...` 占位，若要单独运行 `generate_text`，需要先补全该文件。
+
+### 3. MLLM 图像描述链条
+
+目标：在 Flickr8k 上训练一个基础图像描述模型。
+
+相关文件：
+
+- 配置：`configs/mllm_config.yaml`
+- 数据集：`datasets/Flickr8k.py`
+- 视觉编码器：`vision_transformer/vit.py`
+- 语言模型：`language_model/llm.py`
+- 连接器：`multimodal_model/connector.py`
+- 多模态模型：`multimodal_model/mllm.py`
+- 训练：`multimodal_model/train_mllm.py`
+- 推理：`multimodal_model/inference_mllm.py`
+
+数据要求：
+
+```text
+data/flickr8k/
+├── Images/ 或 Flicker8k_Dataset/
+└── captions.txt
+```
+
+训练数据流：
+
+```text
+image
+-> ViT.forward_features()
+-> visual features
+-> Connector: vision_dim -> language_dim
+-> visual embeddings
+
+caption
+-> CharacterTokenizer
+-> [<sos>] + caption tokens + [<eos>]
+-> text embeddings
+
+visual embeddings + text embeddings
+-> GPTModel.forward_from_embeddings()
+-> caption token prediction
+```
+
+损失计算重点：
+
+```text
+logits length = num_visual_tokens + num_text_tokens
+labels length = same as logits
+visual token positions = ignore_index
+text token positions = real caption targets
+```
+
+也就是说，训练时只对文本 caption 部分计算 `CrossEntropyLoss`，视觉 token 位置不参与损失。
+
+训练命令：
+
+```bash
+python main.py --task train_mllm --config configs/mllm_config.yaml
+```
+
+推理命令：
+
+```bash
+python main.py --task inference_mllm --config configs/mllm_config.yaml
+```
+
+主要输出：
+
+- `checkpoints/mllm_flickr8k_v2_best.pth`
+- `checkpoints/flickr8k_tokenizer.json`
+- `checkpoints/mllm_loss_curve.png`
+
+## RL 微调链条
+
+目标：在 SFT 后的 MLLM 基础上进行 SCST 风格强化学习微调。
+
+RL 相关目录
 
 ```
 ├── configs/
@@ -176,29 +278,92 @@ $$
 │   └── test_rl_mllm.sh
 ```
 
-### 支持功能：
+相关文件：
 
-* 返回 log prob 的增强版 MLLM
-* 基于 CIDEr / BLEU 的 reward 计算
-* RL 训练脚本与评估脚本
-* 可与 SFT 权重无缝衔接
+- 配置：`configs/rl_mllm_config.yaml`
+- 训练：`multimodal_model/train_rl_mllm.py`
+- 推理：`multimodal_model/inference_rl_mllm.py`
 
-### 运行RL脚本
+前置条件：
 
+- 已完成 MLLM SFT 训练
+- 存在 `configs/rl_mllm_config.yaml` 中指定的 `best_model_save_path`
+- 存在 Flickr8k tokenizer：`checkpoints/flickr8k_tokenizer.json`
+
+RL 训练逻辑：
+
+```text
+image + <sos>
+-> sampled caption + sampled logprobs
+-> greedy caption baseline
+-> reward(sampled) - reward(greedy) = advantage
+-> rl_loss = - advantage * sampled_logprob
+-> final_loss = lambda_rl * rl_loss + lambda_ce * ce_loss
 ```
-bash script/train_rl_mllm.sh
-bash script/test_rl_mllm.sh
+
+当前 reward 是字符级 bigram overlap，形式上类似简化版 BLEU-2。
+
+训练命令：
+
+```bash
+python main.py --task train_rl_mllm --config configs/rl_mllm_config.yaml
 ```
 
+主要输出：
 
-# 📝 补充说明
-* vit 和 gpt 的 loss 曲线图都在 mllm_from_scratch/MLLM_from_scratch下；mllm 的在mllm_from_scratch/MLLM_from_scratch/checkpoint 下
-* 组装 transformer 需要通过的单元测试在 test_transformer.ipynb 中完成
+- `checkpoints/mllm_rl.pt`
+- `checkpoints/rl_loss_curve.png`
 
----
+## 配置文件说明
 
-# 📚 参考资料
+```text
+configs/vit_config.yaml
+```
 
-* 复旦大学 2025 秋《人工智能前沿探索实践》Project-2
-* Sebastian Raschka，《LLMs from Scratch》[https://github.com/rasbt/LLMs-from-scratch](https://github.com/rasbt/LLMs-from-scratch)
+控制 CIFAR-10 路径、图像尺寸、ViT 结构、训练超参和单图预测路径。
 
+```text
+configs/llm_config.yaml
+```
+
+控制 Tiny Shakespeare 下载路径、block size、GPT 结构、训练超参和生成参数。
+
+```text
+configs/mllm_config.yaml
+```
+
+控制 Flickr8k 路径、tokenizer 保存路径、ViT/LLM/Connector 结构、SFT 训练超参和图像描述推理参数。
+
+```text
+configs/rl_mllm_config.yaml
+```
+
+控制 RL 微调超参、SFT checkpoint 路径、RL checkpoint 保存路径，以及与 SFT 阶段保持一致的模型结构。
+
+## 测试与检查
+
+Transformer 基础模块测试：
+
+```bash
+pytest tests
+```
+
+已有测试主要覆盖：
+
+- attention
+- encoder/decoder block
+- transformer 组合模块
+
+## 本地运行注意事项
+
+- `script/*.sh` 目前含有服务器绝对路径，本机运行前建议改成 `configs/*.yaml` 形式的相对路径。
+- `script/test_llm.sh` 当前指向了 `vit_config.yaml`，应改为 `llm_config.yaml`。
+- `language_model/generate_text.py` 仍有 `...` 占位，单独文本生成前需要补完。
+- `configs/mllm_config.yaml` 和 `configs/vit_config.yaml` 中的部分推理图片路径是服务器路径，本机推理前需要改成本地存在的图片。
+- CIFAR-10 和 Tiny Shakespeare 可以自动下载；Flickr8k 通常需要手动下载并放到 `data/flickr8k/`。
+- 默认设备多处写为 `cuda`。如果在 Mac 或 CPU 环境运行，请将配置里的 `device` 改为 `cpu` 或适合的设备，并酌情把 `num_workers` 调小。
+
+## 参考资料
+
+- 复旦大学 2025 秋《人工智能前沿探索实践》Project-2
+- Sebastian Raschka, LLMs from Scratch: https://github.com/rasbt/LLMs-from-scratch
