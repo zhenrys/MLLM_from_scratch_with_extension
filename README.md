@@ -66,6 +66,9 @@ MLLM-from-scratch/
 ├── requirements.txt
 └── README.md
 ```
+---
+## 模型结构示意图
+<img width="1936" height="1160" alt="图片" src="https://github.com/user-attachments/assets/5fb3b91c-a00f-4084-8344-16ca752ea738" />
 
 ---
 
